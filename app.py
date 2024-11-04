@@ -43,3 +43,7 @@ fig = px.histogram(df_filtered,
                    histnorm = histnorm,
                    barmode = 'Overlay')
 st.write(fig)
+
+
+#Trouble shooting Render error
+df['price'] = df['price'].astype(float)
