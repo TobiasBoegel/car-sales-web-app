@@ -5,6 +5,8 @@ import plotly.express as px
 #loading dataset
 df = pd.read_csv('vehicles_us.csv')
 df['manufacturer'] = df['model'].apply(lambda x: x.split()[0])
+#Trouble shooting Render error
+df['price'] = df['price'].astype(float)
 #Displaying DataFrame with Streamlit
 st.header('Data Viewer')
 st.dataframe(df)
@@ -43,7 +45,3 @@ fig = px.histogram(df_filtered,
                    histnorm = histnorm,
                    barmode = 'Overlay')
 st.write(fig)
-
-
-#Trouble shooting Render error
-df['price'] = df['price'].astype(float)
