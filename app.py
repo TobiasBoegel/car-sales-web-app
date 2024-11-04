@@ -7,7 +7,7 @@ df = pd.read_csv('vehicles_us.csv')
 df['manufacturer'] = df['model'].apply(lambda x: x.split()[0])
 #Trouble shooting Render errors
 import numpy as np
-df['price'] = df['price'].astype(float)
+df['price'] = df['price'].astype(object)
 df['date_posted'] = pd.to_datetime(df['date_posted'])
 df['days_listed'] = df['days_listed'].astype(float)
 #Displaying DataFrame with Streamlit
