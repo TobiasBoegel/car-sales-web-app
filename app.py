@@ -5,8 +5,9 @@ import plotly.express as px
 #loading dataset
 df = pd.read_csv('vehicles_us.csv')
 df['manufacturer'] = df['model'].apply(lambda x: x.split()[0])
-#Trouble shooting Render error
+#Trouble shooting Render errors
 df['price'] = df['price'].astype(float)
+df['date_posted'] = pd.to_datetime(df['date_posted'])
 #Displaying DataFrame with Streamlit
 st.header('Data Viewer')
 st.dataframe(df)
