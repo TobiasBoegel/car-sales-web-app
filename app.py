@@ -2,9 +2,19 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-#loading dataset
-df = pd.read_csv('vehicles_us.csv')
-df['manufacturer'] = df['model'].apply(lambda x: x.split()[0])
+import os
+
+# Disable pyarrow integration in Streamlit to avoid ArrowTypeError
+os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"
+
+# Load dataset with caching to optimize performance
+@st.cache
+def load_data():
+    df = pd.read_csv('vehicles_us.csv')
+    df['manufacturer'] = df['model'].apply(lambda x: x.split()[0])  # Extract manufacturer from model
+    return df
+df = load_data()
+
 #Trouble shooting personal code
 st.title("Car Listings Analysis")
 
@@ -85,9 +95,9 @@ filtered_df = df[
 ]
 
 # Ensure data types are consistent for smooth display
-filtered_df['price'] = pd.to_numeric(filtered_df['price'], errors='coerce').fillna(0).astype(int)
-filtered_df['model_year'] = pd.to_numeric(filtered_df['model_year'], errors='coerce').fillna(0).astype(int)
-filtered_df['odometer'] = pd.to_numeric(filtered_df['odometer'], errors='coerce').fillna(0).astype(int)
+filtered_df['price'] = pd.to_numeric(filtered_df['price'], errors='coerce').fillna(0).astype('int64')
+filtered_df['model_year'] = pd.to_numeric(filtered_df['model_year'], errors='coerce').fillna(0).astype('int64')
+filtered_df['odometer'] = pd.to_numeric(filtered_df['odometer'], errors='coerce').fillna(0).astype('int64')
 filtered_df['manufacturer'] = filtered_df['manufacturer'].astype(str)
 filtered_df['condition'] = filtered_df['condition'].astype(str)
 filtered_df['fuel'] = filtered_df['fuel'].astype(str)
@@ -120,10 +130,10 @@ elif sorting_criteria == "Condition: Worst to Best":
     filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
     filtered_df = filtered_df.sort_values(by="condition", ascending=True)
 
-# Display Top 15 Search Results
+# Display Top 15 Search Results with st.write() instead of st.dataframe() to avoid pyarrow conversion issues
 st.write("### Search Results")
 st.write(f"Displaying the top 15 results based on selected criteria:")
-st.dataframe(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].head(15))
+st.write(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].head(15))
 
 # Pagination for additional results if needed
 total_results = len(filtered_df)
@@ -137,8 +147,8 @@ if total_results > 15:
     end_idx = start_idx + page_size
     st.write(f"Displaying results {start_idx + 1} to {min(end_idx, total_results)} of {total_results}")
 
-    # Display paginated results for the current page
-    st.dataframe(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].iloc[start_idx:end_idx])
+    # Display paginated results using st.write()
+    st.write(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].iloc[start_idx:end_idx])
 
 
 # Title for the stacked bar chart
