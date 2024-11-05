@@ -84,6 +84,18 @@ filtered_df = df[
     (df['transmission'] == selected_transmission)
 ]
 
+# Ensure data types are consistent
+# Convert 'price', 'model_year', and 'odometer' to numeric types
+filtered_df['price'] = pd.to_numeric(filtered_df['price'], errors='coerce').fillna(0).astype(int)
+filtered_df['model_year'] = pd.to_numeric(filtered_df['model_year'], errors='coerce').fillna(0).astype(int)
+filtered_df['odometer'] = pd.to_numeric(filtered_df['odometer'], errors='coerce').fillna(0).astype(int)
+
+# Convert categorical columns to string types
+filtered_df['manufacturer'] = filtered_df['manufacturer'].astype(str)
+filtered_df['condition'] = filtered_df['condition'].astype(str)
+filtered_df['fuel'] = filtered_df['fuel'].astype(str)
+filtered_df['transmission'] = filtered_df['transmission'].astype(str)
+
 # Sorting Options
 st.sidebar.header("Sorting Options")
 
@@ -117,6 +129,7 @@ elif sorting_criteria == "Condition: Worst to Best":
 st.write("### Search Results")
 st.write(f"Displaying {len(filtered_df)} vehicles based on selected criteria:")
 st.dataframe(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']])
+
 
 # Title for the stacked bar chart
 st.subheader("🚗 Distribution of Vehicle Condition by Model Year")
