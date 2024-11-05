@@ -99,12 +99,24 @@ fig_price_odometer_condition = px.scatter(
 fig_price_odometer_condition.update_layout(xaxis_title="Odometer (miles)", yaxis_title="Price")
 st.plotly_chart(fig_price_odometer_condition)
 
-# Listings over time line chart
+# Convert 'date_posted' to datetime format
+df['date_posted'] = pd.to_datetime(df['date_posted'], errors='coerce')
+
+# Drop rows with NaT (null) in 'date_posted' if conversion failed
+df = df.dropna(subset=['date_posted'])
+
+# Create the Listings over Time plot
 st.subheader("📅 Listings Over Time")
+
+# Extract month and year from the 'date_posted' column for grouping
 df['month_year'] = df['date_posted'].dt.to_period('M').astype(str)  # Monthly grouping
 listings_over_time = df.groupby('month_year').size().reset_index(name='listings')
-fig_listings_time = px.line(listings_over_time, x="month_year", y="listings",
-                            title="Number of Listings Over Time", markers=True, width=1200, height=600)
+
+# Plot using Plotly Express
+fig_listings_time = px.line(
+    listings_over_time, x="month_year", y="listings",
+    title="Number of Listings Over Time", markers=True, width=1200, height=600
+)
 fig_listings_time.update_layout(xaxis_title="Month-Year", yaxis_title="Number of Listings")
 st.plotly_chart(fig_listings_time)
 
