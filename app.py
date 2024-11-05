@@ -4,15 +4,17 @@ import pandas as pd
 import plotly.express as px
 import os
 
-# Disable pyarrow integration in Streamlit to avoid ArrowTypeError
+# Disable pyarrow timezone integration and pandas options
 os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"
+pd.options.mode.use_inf_as_na = True  # Treat infinity values as NaN
+pd.options.display.large_repr = "truncate"  # Avoid using pyarrow
 
-# Load dataset with caching to optimize performance
-@st.cache_data
+# Load dataset without caching
 def load_data():
     df = pd.read_csv('vehicles_us.csv')
     df['manufacturer'] = df['model'].apply(lambda x: x.split()[0])  # Extract manufacturer from model
     return df
+
 df = load_data()
 
 #Trouble shooting personal code
@@ -51,105 +53,6 @@ fig_manufacturer_model.update_layout(
 
 # Display the plot in Streamlit
 st.plotly_chart(fig_manufacturer_model)
-
-# Title for the search engine
-st.subheader("🔍 Vehicle Search Engine")
-
-# Filter options in the sidebar
-st.sidebar.header("Filter Options")
-
-# Price Range Filter with narrowed default range
-price_min = int(df['price'].min())
-price_max = int(df['price'].max())
-price_range = st.sidebar.slider("Price Range", min_value=price_min, max_value=price_max, value=(price_min, price_min + (price_max - price_min) // 2))
-
-# Model Year Range Filter with narrowed default range
-year_min = int(df['model_year'].min())
-year_max = int(df['model_year'].max())
-year_range = st.sidebar.slider("Model Year Range", min_value=year_min, max_value=year_max, value=(year_min, year_min + (year_max - year_min) // 2))
-
-# Condition Filter (multi-select)
-condition_options = df['condition'].unique()
-selected_conditions = st.sidebar.multiselect("Select Condition(s)", condition_options, default=condition_options)
-
-# Manufacturer Filter (multi-select)
-manufacturer_options = df['manufacturer'].unique()
-selected_manufacturers = st.sidebar.multiselect("Select Manufacturer(s)", manufacturer_options, default=manufacturer_options)
-
-# Fuel Type Filter (multi-select)
-fuel_options = df['fuel'].unique()
-selected_fuel_types = st.sidebar.multiselect("Select Fuel Type(s)", fuel_options, default=fuel_options)
-
-# Transmission Filter (radio button)
-transmission_options = df['transmission'].unique()
-selected_transmission = st.sidebar.radio("Select Transmission", transmission_options)
-
-# Apply Filters to DataFrame
-filtered_df = df[
-    (df['price'] >= price_range[0]) & (df['price'] <= price_range[1]) &
-    (df['model_year'] >= year_range[0]) & (df['model_year'] <= year_range[1]) &
-    (df['condition'].isin(selected_conditions)) &
-    (df['manufacturer'].isin(selected_manufacturers)) &
-    (df['fuel'].isin(selected_fuel_types)) &
-    (df['transmission'] == selected_transmission)
-]
-
-# Ensure data types are consistent for smooth display
-filtered_df['price'] = pd.to_numeric(filtered_df['price'], errors='coerce').fillna(0).astype('int64')
-filtered_df['model_year'] = pd.to_numeric(filtered_df['model_year'], errors='coerce').fillna(0).astype('int64')
-filtered_df['odometer'] = pd.to_numeric(filtered_df['odometer'], errors='coerce').fillna(0).astype('int64')
-filtered_df['manufacturer'] = filtered_df['manufacturer'].astype(str)
-filtered_df['condition'] = filtered_df['condition'].astype(str)
-filtered_df['fuel'] = filtered_df['fuel'].astype(str)
-filtered_df['transmission'] = filtered_df['transmission'].astype(str)
-
-# Sorting Options
-st.sidebar.header("Sorting Options")
-
-# Sorting selection via radio buttons
-sorting_criteria = st.sidebar.radio(
-    "Choose Sorting Order",
-    ("Price: High to Low", "Price: Low to High", "Year: New to Old", "Year: Old to New", "Condition: Best to Worst", "Condition: Worst to Best")
-)
-
-# Define sorting logic based on user selection
-if sorting_criteria == "Price: High to Low":
-    filtered_df = filtered_df.sort_values(by="price", ascending=False)
-elif sorting_criteria == "Price: Low to High":
-    filtered_df = filtered_df.sort_values(by="price", ascending=True)
-elif sorting_criteria == "Year: New to Old":
-    filtered_df = filtered_df.sort_values(by="model_year", ascending=False)
-elif sorting_criteria == "Year: Old to New":
-    filtered_df = filtered_df.sort_values(by="model_year", ascending=True)
-elif sorting_criteria == "Condition: Best to Worst":
-    condition_order = ["new", "like new", "excellent", "good", "fair", "salvage"]
-    filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
-    filtered_df = filtered_df.sort_values(by="condition", ascending=True)
-elif sorting_criteria == "Condition: Worst to Best":
-    condition_order = ["salvage", "fair", "good", "excellent", "like new", "new"]
-    filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
-    filtered_df = filtered_df.sort_values(by="condition", ascending=True)
-
-# Display Top 15 Search Results with st.write() instead of st.dataframe() to avoid pyarrow conversion issues
-st.write("### Search Results")
-st.write(f"Displaying the top 15 results based on selected criteria:")
-st.write(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].head(15))
-
-# Pagination for additional results if needed
-total_results = len(filtered_df)
-if total_results > 15:
-    st.write(f"Total results found: {total_results}")
-    page_size = 15
-    total_pages = (total_results // page_size) + 1
-    page = st.number_input("Select Page", min_value=1, max_value=total_pages, value=1, step=1)
-
-    start_idx = (page - 1) * page_size
-    end_idx = start_idx + page_size
-    st.write(f"Displaying results {start_idx + 1} to {min(end_idx, total_results)} of {total_results}")
-
-    # Display paginated results using st.write()
-    st.write(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].iloc[start_idx:end_idx])
-
 
 # Title for the stacked bar chart
 st.subheader("🚗 Distribution of Vehicle Condition by Model Year")
@@ -224,3 +127,87 @@ fig_fuel_type = px.pie(
 )
 fig_fuel_type.update_layout(width=800, height=500)
 st.plotly_chart(fig_fuel_type)
+
+# Title for the search engine
+st.subheader("🔍 Vehicle Search Engine")
+
+# Filter options in the sidebar
+st.sidebar.header("Filter Options")
+
+# Price Range Filter with narrowed default range
+price_min = int(df['price'].min())
+price_max = int(df['price'].max())
+price_range = st.sidebar.slider("Price Range", min_value=price_min, max_value=price_max, value=(price_min, price_min + (price_max - price_min) // 2))
+
+# Model Year Range Filter with narrowed default range
+year_min = int(df['model_year'].min())
+year_max = int(df['model_year'].max())
+year_range = st.sidebar.slider("Model Year Range", min_value=year_min, max_value=year_max, value=(year_min, year_min + (year_max - year_min) // 2))
+
+# Condition Filter (multi-select)
+condition_options = df['condition'].unique()
+selected_conditions = st.sidebar.multiselect("Select Condition(s)", condition_options, default=condition_options)
+
+# Manufacturer Filter (multi-select)
+manufacturer_options = df['manufacturer'].unique()
+selected_manufacturers = st.sidebar.multiselect("Select Manufacturer(s)", manufacturer_options, default=manufacturer_options)
+
+# Fuel Type Filter (multi-select)
+fuel_options = df['fuel'].unique()
+selected_fuel_types = st.sidebar.multiselect("Select Fuel Type(s)", fuel_options, default=fuel_options)
+
+# Transmission Filter (radio button)
+transmission_options = df['transmission'].unique()
+selected_transmission = st.sidebar.radio("Select Transmission", transmission_options)
+
+# Apply Filters to DataFrame
+filtered_df = df[
+    (df['price'] >= price_range[0]) & (df['price'] <= price_range[1]) &
+    (df['model_year'] >= year_range[0]) & (df['model_year'] <= year_range[1]) &
+    (df['condition'].isin(selected_conditions)) &
+    (df['manufacturer'].isin(selected_manufacturers)) &
+    (df['fuel'].isin(selected_fuel_types)) &
+    (df['transmission'] == selected_transmission)
+]
+
+# Ensure data types are consistent
+filtered_df['price'] = pd.to_numeric(filtered_df['price'], errors='coerce').fillna(0).astype(int)
+filtered_df['model_year'] = pd.to_numeric(filtered_df['model_year'], errors='coerce').fillna(0).astype(int)
+filtered_df['odometer'] = pd.to_numeric(filtered_df['odometer'], errors='coerce').fillna(0).astype(int)
+filtered_df['manufacturer'] = filtered_df['manufacturer'].astype(str)
+filtered_df['condition'] = filtered_df['condition'].astype(str)
+filtered_df['fuel'] = filtered_df['fuel'].astype(str)
+filtered_df['transmission'] = filtered_df['transmission'].astype(str)
+
+# Sorting Options
+st.sidebar.header("Sorting Options")
+
+# Sorting selection via radio buttons
+sorting_criteria = st.sidebar.radio(
+    "Choose Sorting Order",
+    ("Price: High to Low", "Price: Low to High", "Year: New to Old", "Year: Old to New", "Condition: Best to Worst", "Condition: Worst to Best")
+)
+
+# Define sorting logic based on user selection
+if sorting_criteria == "Price: High to Low":
+    filtered_df = filtered_df.sort_values(by="price", ascending=False)
+elif sorting_criteria == "Price: Low to High":
+    filtered_df = filtered_df.sort_values(by="price", ascending=True)
+elif sorting_criteria == "Year: New to Old":
+    filtered_df = filtered_df.sort_values(by="model_year", ascending=False)
+elif sorting_criteria == "Year: Old to New":
+    filtered_df = filtered_df.sort_values(by="model_year", ascending=True)
+elif sorting_criteria == "Condition: Best to Worst":
+    condition_order = ["new", "like new", "excellent", "good", "fair", "salvage"]
+    filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
+    filtered_df = filtered_df.sort_values(by="condition", ascending=True)
+elif sorting_criteria == "Condition: Worst to Best":
+    condition_order = ["salvage", "fair", "good", "excellent", "like new", "new"]
+    filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
+    filtered_df = filtered_df.sort_values(by="condition", ascending=True)
+
+# Display limited number of rows, converted to strings
+display_df = filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].head(15).astype(str)
+st.write("### Search Results")
+st.write(f"Displaying the top 15 results based on selected criteria:")
+st.write(display_df)
