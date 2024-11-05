@@ -8,7 +8,7 @@ import os
 os.environ["PYARROW_IGNORE_TIMEZONE"] = "1"
 
 # Load dataset with caching to optimize performance
-@st.cache
+@st.cache_data
 def load_data():
     df = pd.read_csv('vehicles_us.csv')
     df['manufacturer'] = df['model'].apply(lambda x: x.split()[0])  # Extract manufacturer from model
