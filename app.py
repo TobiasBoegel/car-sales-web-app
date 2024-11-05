@@ -10,7 +10,12 @@ st.title("Car Listings Analysis")
 
 # # Streamlit header
 st.header("Explore the Dataset")
-
+# Title for the data viewer
+st.subheader("📊 Data Viewer")
+# Instructional text
+st.write("This interactive table displays all the data in the dataset. Scroll horizontally and vertically to view all rows and columns.")
+# Displaying the DataFrame with specific height and width settings
+st.dataframe(df, height=400, width=1000)  
 # Checkbox to show/hide Price Distribution Histogram
 if st.checkbox('Show Price Distribution Histogram'):
     st.subheader('Distribution of Car Prices')
