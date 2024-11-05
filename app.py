@@ -48,15 +48,15 @@ st.subheader("🔍 Vehicle Search Engine")
 # Filter options in the sidebar
 st.sidebar.header("Filter Options")
 
-# Price Range Filter
+# Price Range Filter with narrowed default range
 price_min = int(df['price'].min())
 price_max = int(df['price'].max())
-price_range = st.sidebar.slider("Price Range", min_value=price_min, max_value=price_max, value=(price_min, price_max))
+price_range = st.sidebar.slider("Price Range", min_value=price_min, max_value=price_max, value=(price_min, price_min + (price_max - price_min) // 2))
 
-# Model Year Range Filter
+# Model Year Range Filter with narrowed default range
 year_min = int(df['model_year'].min())
 year_max = int(df['model_year'].max())
-year_range = st.sidebar.slider("Model Year Range", min_value=year_min, max_value=year_max, value=(year_min, year_max))
+year_range = st.sidebar.slider("Model Year Range", min_value=year_min, max_value=year_max, value=(year_min, year_min + (year_max - year_min) // 2))
 
 # Condition Filter (multi-select)
 condition_options = df['condition'].unique()
@@ -84,13 +84,10 @@ filtered_df = df[
     (df['transmission'] == selected_transmission)
 ]
 
-# Ensure data types are consistent
-# Convert 'price', 'model_year', and 'odometer' to numeric types
+# Ensure data types are consistent for smooth display
 filtered_df['price'] = pd.to_numeric(filtered_df['price'], errors='coerce').fillna(0).astype(int)
 filtered_df['model_year'] = pd.to_numeric(filtered_df['model_year'], errors='coerce').fillna(0).astype(int)
 filtered_df['odometer'] = pd.to_numeric(filtered_df['odometer'], errors='coerce').fillna(0).astype(int)
-
-# Convert categorical columns to string types
 filtered_df['manufacturer'] = filtered_df['manufacturer'].astype(str)
 filtered_df['condition'] = filtered_df['condition'].astype(str)
 filtered_df['fuel'] = filtered_df['fuel'].astype(str)
@@ -115,20 +112,33 @@ elif sorting_criteria == "Year: New to Old":
 elif sorting_criteria == "Year: Old to New":
     filtered_df = filtered_df.sort_values(by="model_year", ascending=True)
 elif sorting_criteria == "Condition: Best to Worst":
-    # Define the condition order for sorting
     condition_order = ["new", "like new", "excellent", "good", "fair", "salvage"]
     filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
     filtered_df = filtered_df.sort_values(by="condition", ascending=True)
 elif sorting_criteria == "Condition: Worst to Best":
-    # Reverse order for worst to best
     condition_order = ["salvage", "fair", "good", "excellent", "like new", "new"]
     filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
     filtered_df = filtered_df.sort_values(by="condition", ascending=True)
 
-# Display Search Results
+# Display Top 15 Search Results
 st.write("### Search Results")
-st.write(f"Displaying {len(filtered_df)} vehicles based on selected criteria:")
-st.dataframe(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']])
+st.write(f"Displaying the top 15 results based on selected criteria:")
+st.dataframe(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].head(15))
+
+# Pagination for additional results if needed
+total_results = len(filtered_df)
+if total_results > 15:
+    st.write(f"Total results found: {total_results}")
+    page_size = 15
+    total_pages = (total_results // page_size) + 1
+    page = st.number_input("Select Page", min_value=1, max_value=total_pages, value=1, step=1)
+
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    st.write(f"Displaying results {start_idx + 1} to {min(end_idx, total_results)} of {total_results}")
+
+    # Display paginated results for the current page
+    st.dataframe(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']].iloc[start_idx:end_idx])
 
 
 # Title for the stacked bar chart
