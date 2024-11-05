@@ -10,12 +10,35 @@ st.title("Car Listings Analysis")
 
 # # Streamlit header
 st.header("Explore the Dataset")
-# Title for the data viewer
-st.subheader("📊 Data Viewer")
-# Instructional text
-st.write("This interactive table displays all the data in the dataset. Scroll horizontally and vertically to view all rows and columns.")
-# Displaying the DataFrame with specific height and width settings
-st.dataframe(df, height=400, width=1000)  
+# Title for the histogram
+st.subheader("🚗 Vehicle Count by Manufacturer and Model Type")
+
+# Histogram to display vehicle count by manufacturer with color-coded model types
+fig_manufacturer_model = px.histogram(
+    df,
+    x="manufacturer",
+    color="type",  # Color segments by model type (e.g., SUV, pickup)
+    title="Vehicle Count by Manufacturer and Model Type",
+    category_orders={"manufacturer": df['manufacturer'].value_counts().index.tolist()},  # Sort manufacturers by count
+)
+
+# Customizing the layout
+fig_manufacturer_model.update_layout(
+    xaxis_title="Manufacturer",
+    yaxis_title="Vehicle Count",
+    yaxis=dict(
+        tickmode='linear',
+        tick0=0,
+        dtick=2000,  # Setting y-axis tick intervals to 2,000
+        range=[0, 14000]  # Setting y-axis range from 0 to 14,000
+    ),
+    bargap=0.1,  # Adds a small space between bars
+    template="plotly_white"  # Set the template style
+)
+
+# Display the plot in Streamlit
+st.plotly_chart(fig_manufacturer_model)
+
 # Checkbox to show/hide Price Distribution Histogram
 if st.checkbox('Show Price Distribution Histogram'):
     st.subheader('Distribution of Car Prices')
