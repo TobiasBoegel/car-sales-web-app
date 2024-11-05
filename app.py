@@ -10,6 +10,7 @@ st.title("Car Listings Analysis")
 
 # # Streamlit header
 st.header("Explore the Dataset")
+
 # Title for the histogram
 st.subheader("🚗 Vehicle Count by Manufacturer and Model Type")
 
@@ -32,121 +33,161 @@ fig_manufacturer_model.update_layout(
         dtick=2000,  # Setting y-axis tick intervals to 2,000
         range=[0, 14000]  # Setting y-axis range from 0 to 14,000
     ),
-    bargap=0.1,  # Adds a small space between bars
+    bargap=0.1, # Adds a small space between bars
+    width=1200, # Increase width for better visualization
+    height=600, # Increase height for clearer differentiation
     template="plotly_white"  # Set the template style
 )
 
 # Display the plot in Streamlit
 st.plotly_chart(fig_manufacturer_model)
 
-# Checkbox to show/hide Price Distribution Histogram
-if st.checkbox('Show Price Distribution Histogram'):
-    st.subheader('Distribution of Car Prices')
-    
-    # Create the histogram with detailed and professional styling
-    fig = px.histogram(
-        df,
-        x='price',
-        title='Distribution of Car Prices',
-        labels={'price': 'Car Price (USD)'},
-        color_discrete_sequence=['#636EFA'],
-        template='presentation',
-    )
-    
-    # Update the layout for a more professional appearance
-    fig.update_layout(
-        title=dict(text='Distribution of Car Prices', x=0.5),
-        xaxis_title='Price (USD)',
-        yaxis_title='Number of Listings',
-        bargap=0.2,
-        plot_bgcolor='rgba(0, 0, 0, 0)',
-        paper_bgcolor='rgba(0, 0, 0, 0)',
-    )
-    
-    # Show the plot
-    st.plotly_chart(fig)
+# Title for the search engine
+st.subheader("🔍 Vehicle Search Engine")
 
-# # Checkbox to show/hide Model Year Distribution Histogram
-if st.checkbox('Show Model Year Distribution Histogram'):
-    st.subheader('Model Year Distribution')
-    fig = px.histogram(df, x='model_year', title='Model Year Distribution')
-    st.plotly_chart(fig)
+# Filter options in the sidebar
+st.sidebar.header("Filter Options")
 
-# # Checkbox to show/hide Odometer Readings Distribution Histogram
-if st.checkbox('Show Odometer Readings Distribution Histogram'):
-    st.subheader('Odometer Readings Distribution')
-    fig = px.histogram(df, x='odometer', title='Odometer Readings Distribution')
-    st.plotly_chart(fig)
+# Price Range Filter
+price_min = int(df['price'].min())
+price_max = int(df['price'].max())
+price_range = st.sidebar.slider("Price Range", min_value=price_min, max_value=price_max, value=(price_min, price_max))
 
-# # Checkbox to show/hide Days Listed Distribution Histogram
-if st.checkbox('Show Days Listed Distribution Histogram'):
-    st.subheader('Days Listed Distribution')
-    fig = px.histogram(df, x='days_listed', title='Days Listed Distribution')
-    st.plotly_chart(fig)
+# Model Year Range Filter
+year_min = int(df['model_year'].min())
+year_max = int(df['model_year'].max())
+year_range = st.sidebar.slider("Model Year Range", min_value=year_min, max_value=year_max, value=(year_min, year_max))
 
-# # Checkbox to show/hide Price vs. Odometer Scatter Plot
-if st.checkbox('Show Price vs. Odometer Scatter Plot'):
-    st.subheader('Price vs. Odometer (Mileage)')
-    fig = px.scatter(df, x='odometer', y='price', title='Price vs. Odometer (Mileage)')
-    st.plotly_chart(fig)
+# Condition Filter (multi-select)
+condition_options = df['condition'].unique()
+selected_conditions = st.sidebar.multiselect("Select Condition(s)", condition_options, default=condition_options)
 
-# # Checkbox to show/hide Price vs. Model Year Scatter Plot
-if st.checkbox('Show Price vs. Model Year Scatter Plot'):
-    st.subheader('Price vs. Model Year')
-    fig = px.scatter(df, x='model_year', y='price', title='Price vs. Model Year')
-    st.plotly_chart(fig)
+# Manufacturer Filter (multi-select)
+manufacturer_options = df['manufacturer'].unique()
+selected_manufacturers = st.sidebar.multiselect("Select Manufacturer(s)", manufacturer_options, default=manufacturer_options)
 
-# # Checkbox to show/hide Price vs. Cylinders Scatter Plot
-if st.checkbox('Show Price vs. Cylinders Scatter Plot'):
-    st.subheader('Price vs. Cylinders')
-    fig = px.scatter(df, x='cylinders', y='price', title='Price vs. Cylinders')
-    st.plotly_chart(fig)
+# Fuel Type Filter (multi-select)
+fuel_options = df['fuel'].unique()
+selected_fuel_types = st.sidebar.multiselect("Select Fuel Type(s)", fuel_options, default=fuel_options)
 
-# # Checkbox to show/hide Number of Listings by Condition Bar Plot
-if st.checkbox('Show Number of Listings by Condition'):
-    st.subheader('Number of Listings by Condition')
-    fig = px.bar(df, x='condition', title='Number of Listings by Condition')
-    st.plotly_chart(fig)
+# Transmission Filter (radio button)
+transmission_options = df['transmission'].unique()
+selected_transmission = st.sidebar.radio("Select Transmission", transmission_options)
 
-# # Checkbox to show/hide Number of Listings by Fuel Type Bar Plot
-if st.checkbox('Show Number of Listings by Fuel Type'):
-    st.subheader('Number of Listings by Fuel Type')
-    fig = px.bar(df, x='fuel', title='Number of Listings by Fuel Type')
-    st.plotly_chart(fig)
+# Apply Filters to DataFrame
+filtered_df = df[
+    (df['price'] >= price_range[0]) & (df['price'] <= price_range[1]) &
+    (df['model_year'] >= year_range[0]) & (df['model_year'] <= year_range[1]) &
+    (df['condition'].isin(selected_conditions)) &
+    (df['manufacturer'].isin(selected_manufacturers)) &
+    (df['fuel'].isin(selected_fuel_types)) &
+    (df['transmission'] == selected_transmission)
+]
 
-# # Checkbox to show/hide Number of Listings by Transmission Type Bar Plot
-if st.checkbox('Show Number of Listings by Transmission Type'):
-    st.subheader('Number of Listings by Transmission Type')
-    fig = px.bar(df, x='transmission', title='Number of Listings by Transmission Type')
-    st.plotly_chart(fig)
+# Sorting Options
+st.sidebar.header("Sorting Options")
 
-# # Checkbox to show/hide Price by Condition Box Plot
-if st.checkbox('Show Price by Condition Box Plot'):
-    st.subheader('Price by Condition')
-    fig = px.box(df, x='condition', y='price', title='Price by Condition')
-    st.plotly_chart(fig)
+# Sorting selection via radio buttons
+sorting_criteria = st.sidebar.radio(
+    "Choose Sorting Order",
+    ("Price: High to Low", "Price: Low to High", "Year: New to Old", "Year: Old to New", "Condition: Best to Worst", "Condition: Worst to Best")
+)
 
-# # Checkbox to show/hide Price by Fuel Type Box Plot
-if st.checkbox('Show Price by Fuel Type Box Plot'):
-    st.subheader('Price by Fuel Type')
-    fig = px.box(df, x='fuel', y='price', title='Price by Fuel Type')
-    st.plotly_chart(fig)
+# Define sorting logic based on user selection
+if sorting_criteria == "Price: High to Low":
+    filtered_df = filtered_df.sort_values(by="price", ascending=False)
+elif sorting_criteria == "Price: Low to High":
+    filtered_df = filtered_df.sort_values(by="price", ascending=True)
+elif sorting_criteria == "Year: New to Old":
+    filtered_df = filtered_df.sort_values(by="model_year", ascending=False)
+elif sorting_criteria == "Year: Old to New":
+    filtered_df = filtered_df.sort_values(by="model_year", ascending=True)
+elif sorting_criteria == "Condition: Best to Worst":
+    # Define the condition order for sorting
+    condition_order = ["new", "like new", "excellent", "good", "fair", "salvage"]
+    filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
+    filtered_df = filtered_df.sort_values(by="condition", ascending=True)
+elif sorting_criteria == "Condition: Worst to Best":
+    # Reverse order for worst to best
+    condition_order = ["salvage", "fair", "good", "excellent", "like new", "new"]
+    filtered_df['condition'] = pd.Categorical(filtered_df['condition'], categories=condition_order, ordered=True)
+    filtered_df = filtered_df.sort_values(by="condition", ascending=True)
 
-# # Checkbox to show/hide Price by Transmission Type Box Plot
-if st.checkbox('Show Price by Transmission Type Box Plot'):
-    st.subheader('Price by Transmission Type')
-    fig = px.box(df, x='transmission', y='price', title='Price by Transmission Type')
-    st.plotly_chart(fig)
+# Display Search Results
+st.write("### Search Results")
+st.write(f"Displaying {len(filtered_df)} vehicles based on selected criteria:")
+st.dataframe(filtered_df[['price', 'model_year', 'manufacturer', 'condition', 'odometer', 'fuel', 'transmission']])
 
-# # Checkbox to show/hide Correlation Matrix Heatmap
-if st.checkbox('Show Correlation Matrix Heatmap'):
-    st.subheader('Correlation Matrix Heatmap')
-    correlation_matrix = df[['price', 'model_year', 'odometer', 'days_listed', 'cylinders']].corr()
-    fig = px.imshow(correlation_matrix, title='Correlation Matrix Heatmap')
-    st.plotly_chart(fig)
+# Title for the stacked bar chart
+st.subheader("🚗 Distribution of Vehicle Condition by Model Year")
 
-# # Checkbox to show/hide Scatter Matrix
-if st.checkbox('Show Scatter Matrix'):
-    st.subheader('Scatter Matrix')
-    fig = px.scatter_matrix(df, dimensions=['price', 'model_year', 'odometer', 'days_listed', 'cylinders'], title='Scatter Matrix')
-    st.plotly_chart(fig)
+# Stacked bar chart to display the distribution of condition across model years
+fig_condition_year = px.histogram(
+    df,
+    x="model_year",
+    color="condition",  # Color segments by condition (e.g., good, excellent, fair)
+    title="Distribution of Vehicle Condition by Model Year",
+    category_orders={"condition": ["new", "like new", "excellent", "good", "fair", "salvage"]},  # Order conditions logically
+)
+
+# Customizing the layout
+fig_condition_year.update_layout(
+    xaxis_title="Model Year",
+    yaxis_title="Vehicle Count",
+    width=1200,  # Consistent width
+    height=600,  # Consistent height
+    bargap=0.1,  # Adds a small space between bars for clarity
+    template="plotly_white"  # Set the template style
+)
+
+# Display the plot in Streamlit
+st.plotly_chart(fig_condition_year)
+
+# Average price by manufacturer and model year heatmap
+st.subheader("💸 Average Price by Manufacturer and Model Year")
+avg_price_data = df.groupby(['manufacturer', 'model_year'])['price'].mean().reset_index()
+fig_avg_price = px.density_heatmap(
+    avg_price_data, x="model_year", y="manufacturer", z="price",
+    color_continuous_scale="Viridis", title="Average Price by Manufacturer and Model Year"
+)
+fig_avg_price.update_layout(width=1200, height=600, xaxis_title="Model Year", yaxis_title="Manufacturer")
+st.plotly_chart(fig_avg_price)
+
+# Scatter plot for price vs. odometer by condition
+st.subheader("📈 Price vs. Odometer by Condition")
+fig_price_odometer_condition = px.scatter(
+    df, x="odometer", y="price", color="condition",
+    title="Price vs. Odometer by Condition", hover_data=['manufacturer', 'model'],
+    width=1200, height=600
+)
+fig_price_odometer_condition.update_layout(xaxis_title="Odometer (miles)", yaxis_title="Price")
+st.plotly_chart(fig_price_odometer_condition)
+
+# Listings over time line chart
+st.subheader("📅 Listings Over Time")
+df['month_year'] = df['date_posted'].dt.to_period('M').astype(str)  # Monthly grouping
+listings_over_time = df.groupby('month_year').size().reset_index(name='listings')
+fig_listings_time = px.line(listings_over_time, x="month_year", y="listings",
+                            title="Number of Listings Over Time", markers=True, width=1200, height=600)
+fig_listings_time.update_layout(xaxis_title="Month-Year", yaxis_title="Number of Listings")
+st.plotly_chart(fig_listings_time)
+
+# Bar chart for top 10 most popular models
+st.subheader("🚘 Top 10 Most Popular Car Models")
+top_models = df['model'].value_counts().nlargest(10).reset_index()
+top_models.columns = ['model', 'count']
+fig_top_models = px.bar(
+    top_models, x="model", y="count", title="Top 10 Most Popular Car Models",
+    color="count", color_continuous_scale="Blues", width=1200, height=600
+)
+fig_top_models.update_layout(xaxis_title="Car Model", yaxis_title="Number of Listings")
+st.plotly_chart(fig_top_models)
+
+# Pie chart for fuel type distribution
+st.subheader("⛽ Fuel Type Distribution")
+fig_fuel_type = px.pie(
+    df, names="fuel", title="Fuel Type Distribution", hole=0.3,
+    color_discrete_sequence=px.colors.sequential.RdBu
+)
+fig_fuel_type.update_layout(width=800, height=500)
+st.plotly_chart(fig_fuel_type)
